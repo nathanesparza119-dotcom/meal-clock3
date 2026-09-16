@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Meal Clock</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+  :root{
+    --cream:#FBF9F4;
+    --ink:#191714;
+    --ink-soft:#4B4640;
+    --rule:#191714;
+    --line:#DAD5C9;
+    --pending:#B08A2E;
+    --pending-bg:#FBF2DE;
+    --done:#3F6B4E;
+    --done-bg:#E9F2EB;
+    --alert:#B23A2E;
+    --alert-bg:#FCE9E6;
+    --swap:#3A5A8C;
+    --swap-bg:#E7EEF6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Archivo',sans-serif;
+    padding:24px 16px 80px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+
+  header{margin-bottom:28px;}
+  .kicker{
+    font-family:'Roboto Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.02em;
+    color:var(--ink-soft);
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:'Archivo Black',sans-serif;
+    font-size:34px;
+    line-height:1.05;
+    margin:0;
+  }
+
+  .totals{
+    border:3px solid var(--rule);
+    padding:16px 18px;
+    margin-bottom:24px;
+    background:#fff;
+  }
+  .totals-title{
+    font-family:'Archivo Black',sans-serif;
+    font-size:20px;
+    margin:0 0 2px;
+  }
+  .totals-sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    border-bottom:8px solid var(--rule);
+    padding-bottom:10px;
+  }
+  .macro-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    font-size:15px;
+  }
+  .macro-row:last-child{border-bottom:none;}
+  .macro-row .name{font-weight:500;}
+  .macro-row .val{
+    font-family:'Roboto Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+  }
+  .macro-row.grand{
+    border-top:4px solid var(--rule);
+    border-bottom:none;
+    margin-top:4px;
+    padding-top:10px;
+    font-size:17px;
+  }
+  .macro-row.grand .name{font-family:'Archivo Black',sans-serif;font-weight:400;}
+  .macro-row.grand .val{font-size:18px;}
+
+  .section-label{
+    font-family:'Roboto Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .meal-card{
+    border:2px solid var(--rule);
+    background:#fff;
+    margin-bottom:14px;
+    overflow:hidden;
+  }
+  .meal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    border-bottom:2px solid var(--rule);
+  }
+  .meal-name-time{display:flex;flex-direction:column;gap:1px;}
+  .meal-name{font-size:17px;font-weight:700;}
+  .meal-swap-tag{
+    font-family:'Roboto Mono',monospace;
+    font-size:10px;
+    color:var(--swap);
+  }
+  .meal-time{
+    font-family:'Roboto Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .status-pill{
+    font-family:'Roboto Mono',monospace;
+    font-size:11px;
+    padding:4px 9px;
+    white-space:nowrap;
+  }
+  .status-pill.pending{background:var(--pending-bg);color:var(--pending);}
+  .status-pill.done{background:var(--done-bg);color:var(--done);}
+
+  .meal-macros{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+  }
+  .meal-macros div{
+    padding:9px 6px;
+    text-align:center;
+    border-right:1px solid var(--line);
+  }
+  .meal-macros div:last-child{border-right:none;}
+  .mm-val{font-family:'Roboto Mono',monospace;font-weight:700;font-size:15px;display:block;}
+  .mm-label{font-size:10px;color:var(--ink-soft);}
+
+  .swap-row{
+    padding:10px 14px 12px;
+    border-top:1px solid var(--line);
+  }
+  .swap-label{
+    font-family:'Roboto Mono',monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+  }
+  .swap-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .swap-chip{
+    border:1.5px solid var(--line);
+    background:#fff;
+    font-family:'Archivo',sans-serif;
+    font-size:12px;
+    padding:5px 10px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .swap-chip.active{
+    border-color:var(--swap);
+    background:var(--swap-bg);
+    color:var(--swap);
+    font-weight:700;
+  }
+
+  .meal-actions{
+    display:flex;
+    border-top:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .meal-actions button{
+    flex:1;
+    min-width:80px;
+    border:none;
+    background:none;
+    font-family:'Archivo',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    padding:10px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .meal-actions button:not(:last-child){border-right:1px solid var(--line);}
+  .meal-actions button:active{background:var(--line);}
+  .meal-actions button.danger{color:var(--alert);}
+
+  .alt-form{
+    padding:12px 14px;
+    border-top:1px solid var(--line);
+    background:var(--swap-bg);
+    display:none;
+  }
+  .alt-form.open{display:block;}
+
+  .add-form{
+    border:2px dashed var(--line);
+    padding:14px;
+    margin-bottom:20px;
+  }
+  .add-form.hidden{display:none;}
+  .field-row{display:flex;gap:8px;margin-bottom:8px;}
+  .field{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .field label{font-size:11px;color:var(--ink-soft);font-family:'Roboto Mono',monospace;}
+  .field input{
+    border:1.5px solid var(--rule);
+    padding:8px;
+    font-family:'Archivo',sans-serif;
+    font-size:14px;
+    background:#fff;
+    color:var(--ink);
+    width:100%;
+  }
+  .field input:focus{outline:2px solid var(--pending);outline-offset:0;}
+
+  .btn-row{display:flex;gap:8px;margin-top:4px;}
+  .btn{
+    border:2px solid var(--rule);
+    background:var(--ink);
+    color:var(--cream);
+    font-family:'Archivo',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:10px 16px;
+    cursor:pointer;
+  }
+  .btn.secondary{background:#fff;color:var(--ink);}
+  .btn.small{padding:7px 12px;font-size:13px;}
+  .btn:active{transform:scale(0.98);}
+
+  .alt-list{margin:0 0 10px;}
+  .alt-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+    padding:6px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .alt-item button{
+    border:none;background:none;color:var(--alert);
+    font-family:'Roboto Mono',monospace;font-size:11px;cursor:pointer;
+  }
+  .alt-item-macros{color:var(--ink-soft);font-family:'Roboto Mono',monospace;font-size:11px;}
+
+  .add-toggle{
+    display:block;
+    width:100%;
+    border:2px solid var(--rule);
+    background:#fff;
+    padding:12px;
+    font-family:'Archivo',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    margin-bottom:20px;
+  }
+
+  .empty{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+    border:2px dashed var(--line);
+  }
+
+  .perm-note{
+    font-size:12px;
+    color:var(--ink-soft);
+    border-left:3px solid var(--pending);
+    padding:8px 12px;
+    margin-bottom:20px;
+    background:#fff;
+  }
+  .perm-note button{
+    font-family:'Roboto Mono',monospace;
+    font-size:12px;
+    text-decoration:underline;
+    background:none;
+    border:none;
+    color:var(--pending);
+    cursor:pointer;
+    padding:0;
+  }
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(25,23,20,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:999;
+    padding:20px;
+  }
+  .overlay.hidden{display:none;}
+  .alarm-card{
+    background:var(--cream);
+    border:4px solid var(--alert);
+    max-width:400px;
+    width:100%;
+    padding:26px 22px;
+    text-align:center;
+  }
+  .alarm-kicker{
+    font-family:'Roboto Mono',monospace;
+    font-size:12px;
+    color:var(--alert);
+    letter-spacing:0.04em;
+    margin:0 0 6px;
+  }
+  .alarm-name{
+    font-family:'Archivo Black',sans-serif;
+    font-size:28px;
+    margin:0 0 18px;
+  }
+  .alarm-macros{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border-top:2px solid var(--rule);
+    border-bottom:2px solid var(--rule);
+    margin-bottom:20px;
+  }
+  .alarm-macros div{padding:10px 4px;border-right:1px solid var(--line);}
+  .alarm-macros div:last-child{border-right:none;}
+  .alarm-macros .mm-val{font-size:17px;}
+  .alarm-btns{display:flex;gap:10px;}
+  .alarm-btns button{flex:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="kicker">Meal clock</p>
+    <h1>Today's eating schedule</h1>
+  </header>
+
+  <div id="perm-note" class="perm-note hidden">
+    Turn on notifications so alarms still reach you if you switch tabs.
+    <button id="perm-btn">Enable notifications</button>
+  </div>
+
+  <div class="totals">
+    <p class="totals-title">Daily macros</p>
+    <p class="totals-sub" id="totals-sub">0 of 0 meals logged</p>
+    <div class="macro-row"><span class="name">Protein</span><span class="val" id="tot-protein">0 g</span></div>
+    <div class="macro-row"><span class="name">Carbs</span><span class="val" id="tot-carbs">0 g</span></div>
+    <div class="macro-row"><span class="name">Fat</span><span class="val" id="tot-fat">0 g</span></div>
+    <div class="macro-row grand"><span class="name">Calories</span><span class="val" id="tot-cal">0</span></div>
+  </div>
+
+  <p class="section-label"><span>Meals</span><span id="meal-count"></span></p>
+  <div id="meal-list"></div>
+  <div id="empty" class="empty hidden">No meals yet. Add your first one below.</div>
+
+  <button class="add-toggle" id="add-toggle">+ Add a meal</button>
+
+  <div class="add-form hidden" id="add-form">
+    <p class="section-label" id="form-heading" style="margin-bottom:14px;"><span>Add a meal</span></p>
+    <div class="field-row">
+      <div class="field" style="flex:2;">
+        <label>Meal name</label>
+        <input type="text" id="f-name" placeholder="Lunch">
+      </div>
+      <div class="field">
+        <label>Time</label>
+        <input type="time" id="f-time" value="12:00">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Protein (g)</label>
+        <input type="number" id="f-protein" min="0" placeholder="30">
+      </div>
+      <div class="field">
+        <label>Carbs (g)</label>
+        <input type="number" id="f-carbs" min="0" placeholder="40">
+      </div>
+      <div class="field">
+        <label>Fat (g)</label>
+        <input type="number" id="f-fat" min="0" placeholder="15">
+      </div>
+    </div>
+
+    <p class="swap-label" style="margin-top:6px;">Alternatives for this slot (optional)</p>
+    <div class="alt-list" id="f-alt-list"></div>
+    <div class="field-row">
+      <div class="field" style="flex:2;">
+        <label>Alt name</label>
+        <input type="text" id="fa-name" placeholder="Overnight oats">
+      </div>
+      <div class="field">
+        <label>Protein</label>
+        <input type="number" id="fa-protein" min="0" placeholder="20">
+      </div>
+      <div class="field">
+        <label>Carbs</label>
+        <input type="number" id="fa-carbs" min="0" placeholder="50">
+      </div>
+      <div class="field">
+        <label>Fat</label>
+        <input type="number" id="fa-fat" min="0" placeholder="8">
+      </div>
+    </div>
+    <button class="btn secondary small" id="fa-add" type="button" style="margin-bottom:10px;">+ Add this alternative</button>
+
+    <p id="form-error" style="display:none;font-size:12px;color:var(--alert);margin:0 0 8px;"></p>
+    <div class="btn-row">
+      <button class="btn" id="f-save">Save meal</button>
+      <button class="btn secondary" id="f-cancel">Cancel</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="overlay hidden" id="alarm-overlay">
+  <div class="alarm-card">
+    <p class="alarm-kicker" id="alarm-time-label">It's time to eat</p>
+    <p class="alarm-name" id="alarm-meal-name">Meal</p>
+    <div class="alarm-macros">
+      <div><span class="mm-val" id="alarm-protein">0g</span><span class="mm-label">protein</span></div>
+      <div><span class="mm-val" id="alarm-carbs">0g</span><span class="mm-label">carbs</span></div>
+      <div><span class="mm-val" id="alarm-fat">0g</span><span class="mm-label">fat</span></div>
+      <div><span class="mm-val" id="alarm-cal">0</span><span class="mm-label">cal</span></div>
+    </div>
+    <div class="alarm-btns">
+      <button class="btn secondary" id="alarm-snooze">Snooze 5 min</button>
+      <button class="btn" id="alarm-done">I ate this</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let meals = [];
+let log = {};
+let selections = {};
+let pendingAlts = [];
+let triggeredToday = new Set();
+let currentAlarmMealId = null;
+let audioCtx = null;
+let editingMealId = null;
+
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function calcCalories(p, c, f){
+  return Math.round(p*4 + c*4 + f*9);
+}
+
+function getSelectedOption(meal){
+  const chosenId = selections[meal.id];
+  if(chosenId && chosenId !== 'preset'){
+    const alt = (meal.alternatives || []).find(a => a.id === chosenId);
+    if(alt) return alt;
+  }
+  return { id: 'preset', name: meal.name, protein: meal.protein, carbs: meal.carbs, fat: meal.fat };
+}
+
+function defaultMeals(){
+  return [
+    {
+      id: 'm-breakfast', name: 'Breakfast', time: '07:30',
+      protein: 25, carbs: 74, fat: 27,
+      alternatives: [
+        { id: 'a-b1', name: 'Bagel + eggs + banana', protein: 25, carbs: 80, fat: 27 },
+        { id: 'a-b2', name: 'Cinnamon Toast Crunch bowl', protein: 10, carbs: 65, fat: 8 }
+      ]
+    },
+    {
+      id: 'm-lunch', name: 'Lunch', time: '12:00',
+      protein: 55, carbs: 60, fat: 7,
+      alternatives: [
+        { id: 'a-l1', name: 'Ground beef rice bowl', protein: 50, carbs: 60, fat: 25 }
+      ]
+    },
+    {
+      id: 'm-afternoon-snack', name: 'Afternoon snack', time: '15:00',
+      protein: 27, carbs: 54, fat: 5,
+      alternatives: [
+        { id: 'a-a1', name: 'Popcorn + rice cake', protein: 4, carbs: 25, fat: 3 }
+      ]
+    },
+    {
+      id: 'm-dinner', name: 'Dinner', time: '18:30',
+      protein: 55, carbs: 49, fat: 30,
+      alternatives: [
+        { id: 'a-d1', name: 'Ground beef + potato + watermelon', protein: 50, carbs: 49, fat: 22 }
+      ]
+    },
+    {
+      id: 'm-evening-snack', name: 'Evening snack', time: '20:30',
+      protein: 4, carbs: 25, fat: 3,
+      alternatives: [
+        { id: 'a-e1', name: 'Greek yogurt + raspberries', protein: 20, carbs: 20, fat: 0 }
+      ]
+    }
+  ];
+}
+
+// Local storage wrapper — works standalone on a phone/browser, no external service needed.
+const localDB = {
+  async get(key){
+    const v = window.localStorage.getItem('mealclock:' + key);
+    return v === null ? null : { value: v };
+  },
+  async set(key, value){
+    window.localStorage.setItem('mealclock:' + key, value);
+    return { value };
+  }
+};
+
+async function loadData(){
+  try {
+    const m = await localDB.get('meals');
+    meals = m ? JSON.parse(m.value) : [];
+  } catch(e){ meals = []; }
+  if(meals.length === 0){
+    meals = defaultMeals();
+    await saveMeals();
+  }
+  meals.forEach(m => { if(!m.alternatives) m.alternatives = []; });
+  try {
+    const l = await localDB.get('log:' + todayKey());
+    log = l ? JSON.parse(l.value) : {};
+  } catch(e){ log = {}; }
+  try {
+    const s = await localDB.get('selection:' + todayKey());
+    selections = s ? JSON.parse(s.value) : {};
+  } catch(e){ selections = {}; }
+  render();
+}
+
+async function saveMeals(){
+  try { await localDB.set('meals', JSON.stringify(meals)); }
+  catch(e){ console.error('save meals failed', e); }
+}
+
+async function saveLog(){
+  try { await localDB.set('log:' + todayKey(), JSON.stringify(log)); }
+  catch(e){ console.error('save log failed', e); }
+}
+
+async function saveSelections(){
+  try { await localDB.set('selection:' + todayKey(), JSON.stringify(selections)); }
+  catch(e){ console.error('save selection failed', e); }
+}
+
+function render(){
+  const list = document.getElementById('meal-list');
+  const empty = document.getElementById('empty');
+  const countLabel = document.getElementById('meal-count');
+  list.innerHTML = '';
+
+  if(meals.length === 0){
+    empty.classList.remove('hidden');
+    countLabel.textContent = '';
+  } else {
+    empty.classList.add('hidden');
+    countLabel.textContent = meals.length + ' set';
+  }
+
+  const sorted = [...meals].sort((a,b) => a.time.localeCompare(b.time));
+
+  sorted.forEach(meal => {
+    const eaten = !!log[meal.id];
+    const selected = getSelectedOption(meal);
+    const cal = calcCalories(selected.protein, selected.carbs, selected.fat);
+    const isSwapped = selected.id !== 'preset';
+
+    const chips = [`<button class="swap-chip ${!isSwapped ? 'active' : ''}" data-swap="${meal.id}" data-alt="preset">${escapeHtml(meal.name)} (original)</button>`]
+      .concat((meal.alternatives || []).map(a =>
+        `<button class="swap-chip ${isSwapped && selected.id === a.id ? 'active' : ''}" data-swap="${meal.id}" data-alt="${a.id}">${escapeHtml(a.name)}</button>`
+      )).join('');
+
+    const card = document.createElement('div');
+    card.className = 'meal-card';
+    card.innerHTML = `
+      <div class="meal-head">
+        <div class="meal-name-time">
+          <span class="meal-name">${escapeHtml(selected.name)}</span>
+          <span class="meal-time">${formatTime(meal.time)}${isSwapped ? ' <span class="meal-swap-tag">· swapped today</span>' : ''}</span>
+        </div>
+        <span class="status-pill ${eaten ? 'done' : 'pending'}">${eaten ? 'logged' : 'scheduled'}</span>
+      </div>
+      <div class="meal-macros">
+        <div><span class="mm-val">${selected.protein}g</span><span class="mm-label">protein</span></div>
+        <div><span class="mm-val">${selected.carbs}g</span><span class="mm-label">carbs</span></div>
+        <div><span class="mm-val">${selected.fat}g</span><span class="mm-label">fat</span></div>
+        <div><span class="mm-val">${cal}</span><span class="mm-label">cal</span></div>
+      </div>
+      ${(meal.alternatives && meal.alternatives.length > 0) ? `
+      <div class="swap-row">
+        <p class="swap-label">Not feeling it today? Swap in:</p>
+        <div class="swap-chips">${chips}</div>
+      </div>` : ''}
+      <div class="meal-actions">
+        <button data-action="toggle" data-id="${meal.id}">${eaten ? 'Mark not eaten' : 'Mark eaten'}</button>
+        <button data-action="edit" data-id="${meal.id}">Edit</button>
+        <button data-action="test" data-id="${meal.id}">Test alarm</button>
+        <button data-action="alt" data-id="${meal.id}">+ Alternative</button>
+        <button data-action="delete" data-id="${meal.id}" class="danger">Delete</button>
+      </div>
+      <div class="alt-form" id="alt-form-${meal.id}">
+        <div class="field-row">
+          <div class="field" style="flex:2;">
+            <label>Alt name</label>
+            <input type="text" id="alt-name-${meal.id}" placeholder="Overnight oats">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Protein</label><input type="number" min="0" id="alt-p-${meal.id}"></div>
+          <div class="field"><label>Carbs</label><input type="number" min="0" id="alt-c-${meal.id}"></div>
+          <div class="field"><label>Fat</label><input type="number" min="0" id="alt-f-${meal.id}"></div>
+        </div>
+        <p style="display:none;font-size:12px;color:var(--alert);margin:0 0 8px;" id="alt-err-${meal.id}"></p>
+        <button class="btn small" data-action="save-alt" data-id="${meal.id}" type="button">Save alternative</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if(action === 'toggle') toggleEaten(id);
+      if(action === 'edit') openEditForm(id);
+      if(action === 'delete') deleteMeal(id);
+      if(action === 'test') fireAlarm(id);
+      if(action === 'alt') toggleAltForm(id);
+      if(action === 'save-alt') saveAltForMeal(id);
+    });
+  });
+
+  list.querySelectorAll('button[data-swap]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mealId = btn.getAttribute('data-swap');
+      const altId = btn.getAttribute('data-alt');
+      selections[mealId] = altId;
+      saveSelections();
+      render();
+    });
+  });
+
+  renderTotals();
+}
+
+function toggleAltForm(mealId){
+  const form = document.getElementById('alt-form-' + mealId);
+  if(form) form.classList.toggle('open');
+}
+
+async function saveAltForMeal(mealId){
+  const nameEl = document.getElementById('alt-name-' + mealId);
+  const pEl = document.getElementById('alt-p-' + mealId);
+  const cEl = document.getElementById('alt-c-' + mealId);
+  const fEl = document.getElementById('alt-f-' + mealId);
+  const errEl = document.getElementById('alt-err-' + mealId);
+  const name = nameEl.value.trim();
+
+  if(!name || pEl.value === '' || cEl.value === '' || fEl.value === ''){
+    errEl.textContent = 'Fill in a name and all three macros.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const meal = meals.find(m => m.id === mealId);
+  if(!meal) return;
+  if(!meal.alternatives) meal.alternatives = [];
+  meal.alternatives.push({
+    id: 'a' + Date.now(),
+    name,
+    protein: Number(pEl.value),
+    carbs: Number(cEl.value),
+    fat: Number(fEl.value)
+  });
+  await saveMeals();
+  render();
+}
+
+function renderTotals(){
+  let p=0,c=0,f=0,cal=0,loggedCount=0;
+  meals.forEach(m => {
+    if(log[m.id]){
+      const sel = getSelectedOption(m);
+      p += Number(sel.protein);
+      c += Number(sel.carbs);
+      f += Number(sel.fat);
+      cal += calcCalories(sel.protein, sel.carbs, sel.fat);
+      loggedCount++;
+    }
+  });
+  document.getElementById('tot-protein').textContent = p + ' g';
+  document.getElementById('tot-carbs').textContent = c + ' g';
+  document.getElementById('tot-fat').textContent = f + ' g';
+  document.getElementById('tot-cal').textContent = cal;
+  document.getElementById('totals-sub').textContent = loggedCount + ' of ' + meals.length + ' meals logged';
+}
+
+function formatTime(t){
+  const [h,m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + period;
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+async function toggleEaten(id){
+  if(log[id]) delete log[id];
+  else log[id] = true;
+  await saveLog();
+  render();
+}
+
+async function deleteMeal(id){
+  meals = meals.filter(m => m.id !== id);
+  delete log[id];
+  delete selections[id];
+  await saveMeals();
+  await saveLog();
+  await saveSelections();
+  render();
+}
+
+document.getElementById('add-toggle').addEventListener('click', () => {
+  document.getElementById('add-form').classList.remove('hidden');
+  document.getElementById('add-toggle').classList.add('hidden');
+});
+
+function openEditForm(id){
+  const meal = meals.find(m => m.id === id);
+  if(!meal) return;
+  editingMealId = id;
+
+  document.getElementById('form-heading').innerHTML = '<span>Edit ' + escapeHtml(meal.name) + '</span>';
+  document.getElementById('f-save').textContent = 'Save changes';
+  document.getElementById('f-name').value = meal.name;
+  document.getElementById('f-time').value = meal.time;
+  document.getElementById('f-protein').value = meal.protein;
+  document.getElementById('f-carbs').value = meal.carbs;
+  document.getElementById('f-fat').value = meal.fat;
+  pendingAlts = (meal.alternatives || []).map(a => ({...a}));
+  renderPendingAlts();
+
+  const form = document.getElementById('add-form');
+  form.classList.remove('hidden');
+  document.getElementById('add-toggle').classList.add('hidden');
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('f-cancel').addEventListener('click', closeForm);
+
+function renderPendingAlts(){
+  const wrap = document.getElementById('f-alt-list');
+  wrap.innerHTML = pendingAlts.map((a, i) => `
+    <div class="alt-item">
+      <span>${escapeHtml(a.name)} <span class="alt-item-macros">${a.protein}p / ${a.carbs}c / ${a.fat}f</span></span>
+      <button data-idx="${i}" type="button">remove</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pendingAlts.splice(Number(btn.getAttribute('data-idx')), 1);
+      renderPendingAlts();
+    });
+  });
+}
+
+document.getElementById('fa-add').addEventListener('click', () => {
+  const name = document.getElementById('fa-name').value.trim();
+  const protein = document.getElementById('fa-protein').value;
+  const carbs = document.getElementById('fa-carbs').value;
+  const fat = document.getElementById('fa-fat').value;
+  if(!name || protein === '' || carbs === '' || fat === '') return;
+  pendingAlts.push({ id: 'a' + Date.now(), name, protein: Number(protein), carbs: Number(carbs), fat: Number(fat) });
+  document.getElementById('fa-name').value = '';
+  document.getElementById('fa-protein').value = '';
+  document.getElementById('fa-carbs').value = '';
+  document.getElementById('fa-fat').value = '';
+  renderPendingAlts();
+});
+
+function closeForm(){
+  document.getElementById('add-form').classList.add('hidden');
+  document.getElementById('add-toggle').classList.remove('hidden');
+  document.getElementById('form-error').style.display = 'none';
+  document.getElementById('form-heading').innerHTML = '<span>Add a meal</span>';
+  document.getElementById('f-save').textContent = 'Save meal';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-protein').value = '';
+  document.getElementById('f-carbs').value = '';
+  document.getElementById('f-fat').value = '';
+  editingMealId = null;
+  pendingAlts = [];
+  renderPendingAlts();
+}
+
+document.getElementById('f-save').addEventListener('click', async () => {
+  const name = document.getElementById('f-name').value.trim();
+  const time = document.getElementById('f-time').value;
+  const protein = document.getElementById('f-protein').value;
+  const carbs = document.getElementById('f-carbs').value;
+  const fat = document.getElementById('f-fat').value;
+  const errEl = document.getElementById('form-error');
+
+  if(!name || !time || protein === '' || carbs === '' || fat === ''){
+    errEl.textContent = 'Fill in a name, time, and all three macros first.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(Number(protein) < 0 || Number(carbs) < 0 || Number(fat) < 0){
+    errEl.textContent = 'Macros can\'t be negative.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if(editingMealId){
+    const meal = meals.find(m => m.id === editingMealId);
+    if(meal){
+      meal.name = name;
+      meal.time = time;
+      meal.protein = Number(protein);
+      meal.carbs = Number(carbs);
+      meal.fat = Number(fat);
+      meal.alternatives = pendingAlts.slice();
+    }
+  } else {
+    meals.push({
+      id: 'm' + Date.now(),
+      name, time,
+      protein: Number(protein),
+      carbs: Number(carbs),
+      fat: Number(fat),
+      alternatives: pendingAlts.slice()
+    });
+  }
+  await saveMeals();
+  closeForm();
+  render();
+});
+
+function playBeep(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    for(let i=0;i<4;i++){
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, now + i*0.5);
+      gain.gain.exponentialRampToValueAtTime(0.3, now + i*0.5 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i*0.5 + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i*0.5);
+      osc.stop(now + i*0.5 + 0.4);
+    }
+  }catch(e){ console.error('beep failed', e); }
+}
+
+function fireAlarm(mealId){
+  const meal = meals.find(m => m.id === mealId);
+  if(!meal) return;
+  currentAlarmMealId = mealId;
+  const selected = getSelectedOption(meal);
+  const cal = calcCalories(selected.protein, selected.carbs, selected.fat);
+  document.getElementById('alarm-meal-name').textContent = selected.name;
+  document.getElementById('alarm-protein').textContent = selected.protein + 'g';
+  document.getElementById('alarm-carbs').textContent = selected.carbs + 'g';
+  document.getElementById('alarm-fat').textContent = selected.fat + 'g';
+  document.getElementById('alarm-cal').textContent = cal;
+  document.getElementById('alarm-time-label').textContent = formatTime(meal.time) + ' — time to eat';
+  document.getElementById('alarm-overlay').classList.remove('hidden');
+  playBeep();
+
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{
+      new Notification('Time to eat: ' + selected.name, {
+        body: selected.protein + 'g protein, ' + selected.carbs + 'g carbs, ' + selected.fat + 'g fat (' + cal + ' cal)'
+      });
+    }catch(e){}
+  }
+}
+
+document.getElementById('alarm-done').addEventListener('click', async () => {
+  if(currentAlarmMealId){
+    log[currentAlarmMealId] = true;
+    await saveLog();
+    render();
+  }
+  document.getElementById('alarm-overlay').classList.add('hidden');
+  currentAlarmMealId = null;
+});
+
+document.getElementById('alarm-snooze').addEventListener('click', () => {
+  const id = currentAlarmMealId;
+  document.getElementById('alarm-overlay').classList.add('hidden');
+  currentAlarmMealId = null;
+  if(id) setTimeout(() => fireAlarm(id), 5 * 60 * 1000);
+});
+
+function checkAlarms(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const nowStr = hh + ':' + mm;
+
+  meals.forEach(meal => {
+    if(meal.time === nowStr){
+      const fireKey = todayKey() + '_' + meal.id + '_' + nowStr;
+      if(!triggeredToday.has(fireKey)){
+        triggeredToday.add(fireKey);
+        fireAlarm(meal.id);
+      }
+    }
+  });
+}
+
+document.getElementById('perm-btn').addEventListener('click', async () => {
+  if('Notification' in window){
+    const perm = await Notification.requestPermission();
+    if(perm === 'granted') document.getElementById('perm-note').classList.add('hidden');
+  }
+});
+
+if('Notification' in window && Notification.permission === 'default'){
+  document.getElementById('perm-note').classList.remove('hidden');
+}
+
+loadData();
+setInterval(checkAlarms, 15000);
+</script>
+</body>
+</html>
